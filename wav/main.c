@@ -92,9 +92,13 @@ write_to_buffer(SNDFILE * infile, int * buffer, int channels)
 
 	frames = BLOCK_SIZE / channels ;
 
-	while ((readcount = sf_read_int (infile, buf, frames)) > 1415)
+	while ((readcount = sf_read_int (infile, buf, frames)) > 0)
 	{	
-		printf("%d\n", readcount);
+		// printf("%d\n", readcount);
+		if ((readcount % 1) == 0)
+		{
+			readcount = readcount - 1;
+		}
 		for (k = 0 ; k < readcount ; k++)
 		{
 			buffer[i] = buf[k];
@@ -156,9 +160,8 @@ main (int argc, char * argv [])
 	SF_INFO		outsfinfo ;
 	memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
 	outsfinfo.samplerate	= insfinfo.samplerate ;
-	outsfinfo.frames		= insfinfo.frames;
+	outsfinfo.frames		= sample_count * 2;
 	outsfinfo.channels		= 2 ;
-	// outsfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24) ;
 	outsfinfo.format		= insfinfo.format ;
 
 	if (! (outfile = sf_open (outfilename, SFM_WRITE, &outsfinfo)))
