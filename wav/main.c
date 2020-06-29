@@ -88,15 +88,20 @@ write_to_buffer(SNDFILE * infile, int * buffer, int channels)
 {	int buf [BLOCK_SIZE] ;
 	sf_count_t frames ;
 	int k, m, readcount, i;
+	i = 0;
 
 	frames = BLOCK_SIZE / channels ;
 
-	while ((readcount = sf_readf_int (infile, buf, frames)) > 0)
-	{	for (k = 0 ; k < readcount ; k++)
+	while ((readcount = sf_read_int (infile, buf, frames)) > 1415)
+	{	
+		printf("%d\n", readcount);
+		for (k = 0 ; k < readcount ; k++)
 		{
 			buffer[i] = buf[k];
 			i++;
 		};
+		// printf("%d\n", i);
+		// i = i + readcount;
 	} ;
 
 	return i;
@@ -107,8 +112,7 @@ int
 main (int argc, char * argv [])
 {	char 		*progname, *infilename, *outfilename ;
 	SNDFILE		*infile = NULL ;
-	FILE		*outfile = NULL ;
-	SF_INFO		sfinfo ;
+	SF_INFO		insfinfo ;
 	int		full_precision = 0 ;
 
 	progname = strrchr (argv [0], '/') ;
@@ -132,67 +136,43 @@ main (int argc, char * argv [])
 	infilename = argv [1] ;
 	outfilename = argv [2] ;
 
-	if (strcmp (infilename, outfilename) == 0)
-	{	printf ("Error : Input and output filenames are the same.\n\n") ;
-		print_usage (progname) ;
-		return 1 ;
-		} ;
+	memset (&insfinfo, 0, sizeof (insfinfo)) ;
 
-	if (infilename [0] == '-')
-	{	printf ("Error : Input filename (%s) looks like an option.\n\n", infilename) ;
-		print_usage (progname) ;
-		return 1 ;
-		} ;
-
-	if (outfilename [0] == '-')
-	{	printf ("Error : Output filename (%s) looks like an option.\n\n", outfilename) ;
-		print_usage (progname) ;
-		return 1 ;
-		} ;
-
-	memset (&sfinfo, 0, sizeof (sfinfo)) ;
-
-	if ((infile = sf_open (infilename, SFM_READ, &sfinfo)) == NULL)
+	if ((infile = sf_open (infilename, SFM_READ, &insfinfo)) == NULL)
 	{	printf ("Not able to open input file %s.\n", infilename) ;
 		puts (sf_strerror (NULL)) ;
 		return 1 ;
 		} ;
 
-	/* Open the output file. */
-	if ((outfile = fopen (outfilename, "w")) == NULL)
-	{	printf ("Not able to open output file %s : %s\n", outfilename, sf_strerror (NULL)) ;
-		return 1 ;
-		} ;
-
-	fprintf (outfile, "# Converted from file %s.\n", infilename) ;
-	fprintf (outfile, "# Channels %d, Sample rate %d\n", sfinfo.channels, sfinfo.samplerate) ;
-
-
-	// SNDFILE	*file ;
-	// SF_INFO	sfinfo ;
-	// int		k ;
-	int	buffer [10000] ;
+	int	buffer [400000] ;
 	int sample_count = 0;
 
-	// memset (&sfinfo, 0, sizeof (sfinfo)) ;
-	// sfinfo.samplerate	= SAMPLE_RATE ;
-	// sfinfo.frames		= SAMPLE_COUNT ;
-	// sfinfo.channels		= 2 ;
-	// sfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24) ;
-
-	// if (! (file = sf_open ("sine.wav", SFM_WRITE, &sfinfo)))
-	// {	printf ("Error : Not able to open output file.\n") ;
-	// 	free (buffer) ;
-	// 	return 1 ;
-	// } ;
-
-	sample_count = write_to_buffer (infile, buffer, sfinfo.channels);
-	printf  ("%d",  sample_count);
-
-	// sf_write_int (file, buffer, sfinfo.channels * sample_count);
-
+	sample_count = write_to_buffer (infile, buffer, insfinfo.channels);
+	printf  ("%d %d\n",  sample_count, (int) insfinfo.frames);
 	sf_close (infile) ;
-	fclose (outfile) ;
+
+
+	SNDFILE		*outfile = NULL ;
+	SF_INFO		outsfinfo ;
+	memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
+	outsfinfo.samplerate	= insfinfo.samplerate ;
+	outsfinfo.frames		= insfinfo.frames;
+	outsfinfo.channels		= 2 ;
+	// outsfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24) ;
+	outsfinfo.format		= insfinfo.format ;
+
+	if (! (outfile = sf_open (outfilename, SFM_WRITE, &outsfinfo)))
+	{	printf ("Error : Not able to open output file.\n") ;
+		// free (buffer) ;
+		return 1 ;
+	} ;
+
+	int samples_written = 0;
+
+	samples_written = sf_write_int (outfile, buffer, sample_count);
+	sf_close(outfile);
+
+	printf  ("%d %d", sample_count, samples_written);
 
 	return 0 ;
 } /* main */
