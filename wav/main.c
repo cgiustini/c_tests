@@ -94,7 +94,7 @@ write_to_buffer(SNDFILE * infile, int * buffer, int channels)
 
 	while ((readcount = sf_read_int (infile, buf, frames)) > 0)
 	{	
-		// printf("%d\n", readcount);
+		// readcount should always be even if items arg (frames) is even. handle case if it is odd
 		if ((readcount % 1) == 0)
 		{
 			readcount = readcount - 1;
@@ -140,66 +140,29 @@ main (int argc, char * argv [])
 {	char 		*infilename, *outfilename ;
 	SNDFILE		*infile = NULL ;
 	SF_INFO		insfinfo ;
-	int		full_precision = 0 ;
-
-	// progname = strrchr (argv [0], '/') ;
-	// progname = progname ? progname + 1 : argv [0] ;
-
-	// switch (argc)
-	// {	case 4 :
-	// 		if (!strcmp ("--full-precision", argv [3]))
-	// 		{	print_usage (progname) ;
-	// 			return 1 ;
-	// 			} ;
-	// 		full_precision = 1 ;
-	// 		argv++ ;
-	// 	case 3 :
-	// 		break ;
-	// 	default:
-	// 		print_usage (progname) ;
-	// 		return 1 ;
-	// 	} ;
 
 	memset (&insfinfo, 0, sizeof (insfinfo));
 
 	infilename = argv [1] ;
 	outfilename = argv [2] ;
 
+
+	// buffer is just huge and will be filledwith data.
+	int	buffer [400000] ;
+	int sample_count = 0;
+
+	// write data from input wav file into buffer.
 	if ((infile = sf_open (infilename, SFM_READ, &insfinfo)) == NULL)
 	{	printf ("Not able to open input file %s.\n", infilename) ;
 		puts (sf_strerror (NULL)) ;
 		return 1 ;
 		} ;
-
-	int	buffer [400000] ;
-	int sample_count = 0;
-
 	sample_count = write_to_buffer (infile, buffer, insfinfo.channels);
-	printf  ("%d %d\n",  sample_count, (int) insfinfo.frames);
 	sf_close (infile) ;
+	printf("Total samples read: %d Total number of frames in file: %d\n",  sample_count, (int) insfinfo.frames);
+	printf("Total samples read should be twice number of frames (since a frame represents samples from all channels at one index in time and there are two channels\n");
 
-
-	// SNDFILE		*outfile = NULL ;
-	// SF_INFO		outsfinfo ;
-	// memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
-	// outsfinfo.samplerate	= insfinfo.samplerate ;
-	// outsfinfo.frames		= sample_count;
-	// outsfinfo.channels		= 2 ;
-	// outsfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24);
-
-	// if (! (outfile = sf_open (outfilename, SFM_WRITE, &outsfinfo)))
-	// {	printf ("Error : Not able to open output file.\n") ;
-	// 	// free (buffer) ;
-	// 	return 1 ;
-	// } ;
-
-	// int samples_written = 0;
-
-	// samples_written = sf_write_int (outfile, buffer, sample_count);
-	// sf_close(outfile);
-
-	// printf  ("%d %d", sample_count, samples_written);
-
+	// Write data from buffer into wav
 	write_to_wav(outfilename, buffer, sample_count, 44100);
 
 	return 0 ;
