@@ -112,35 +112,58 @@ write_to_buffer(SNDFILE * infile, int * buffer, int channels)
 } /* convert_to_text */
 
 
+int write_to_wav(char *filename, int * buffer, int sample_count, int samplerate)
+{
+	SNDFILE		*outfile = NULL ;
+	SF_INFO		outsfinfo ;
+	memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
+	outsfinfo.samplerate	= samplerate ;
+	outsfinfo.frames		= sample_count;
+	outsfinfo.channels		= 2;
+	outsfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24);
+	int samples_written = 0;
+
+	if (! (outfile = sf_open (filename, SFM_WRITE, &outsfinfo)))
+	{	printf ("Error : Not able to open output file.\n") ;
+		return 1 ;
+	} ;
+
+	samples_written = sf_write_int (outfile, buffer, sample_count);
+	sf_close(outfile);
+	printf  ("%d %d", sample_count, samples_written);		
+	return samples_written;
+};
+
+
 int
 main (int argc, char * argv [])
-{	char 		*progname, *infilename, *outfilename ;
+{	char 		*infilename, *outfilename ;
 	SNDFILE		*infile = NULL ;
 	SF_INFO		insfinfo ;
 	int		full_precision = 0 ;
 
-	progname = strrchr (argv [0], '/') ;
-	progname = progname ? progname + 1 : argv [0] ;
+	// progname = strrchr (argv [0], '/') ;
+	// progname = progname ? progname + 1 : argv [0] ;
 
-	switch (argc)
-	{	case 4 :
-			if (!strcmp ("--full-precision", argv [3]))
-			{	print_usage (progname) ;
-				return 1 ;
-				} ;
-			full_precision = 1 ;
-			argv++ ;
-		case 3 :
-			break ;
-		default:
-			print_usage (progname) ;
-			return 1 ;
-		} ;
+	// switch (argc)
+	// {	case 4 :
+	// 		if (!strcmp ("--full-precision", argv [3]))
+	// 		{	print_usage (progname) ;
+	// 			return 1 ;
+	// 			} ;
+	// 		full_precision = 1 ;
+	// 		argv++ ;
+	// 	case 3 :
+	// 		break ;
+	// 	default:
+	// 		print_usage (progname) ;
+	// 		return 1 ;
+	// 	} ;
+
+	memset (&insfinfo, 0, sizeof (insfinfo));
 
 	infilename = argv [1] ;
 	outfilename = argv [2] ;
-
-	memset (&insfinfo, 0, sizeof (insfinfo)) ;
 
 	if ((infile = sf_open (infilename, SFM_READ, &insfinfo)) == NULL)
 	{	printf ("Not able to open input file %s.\n", infilename) ;
@@ -156,26 +179,28 @@ main (int argc, char * argv [])
 	sf_close (infile) ;
 
 
-	SNDFILE		*outfile = NULL ;
-	SF_INFO		outsfinfo ;
-	memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
-	outsfinfo.samplerate	= insfinfo.samplerate ;
-	outsfinfo.frames		= sample_count * 2;
-	outsfinfo.channels		= 2 ;
-	outsfinfo.format		= insfinfo.format ;
+	// SNDFILE		*outfile = NULL ;
+	// SF_INFO		outsfinfo ;
+	// memset (&outsfinfo, 0, sizeof (outsfinfo)) ;
+	// outsfinfo.samplerate	= insfinfo.samplerate ;
+	// outsfinfo.frames		= sample_count;
+	// outsfinfo.channels		= 2 ;
+	// outsfinfo.format		= (SF_FORMAT_WAV | SF_FORMAT_PCM_24);
 
-	if (! (outfile = sf_open (outfilename, SFM_WRITE, &outsfinfo)))
-	{	printf ("Error : Not able to open output file.\n") ;
-		// free (buffer) ;
-		return 1 ;
-	} ;
+	// if (! (outfile = sf_open (outfilename, SFM_WRITE, &outsfinfo)))
+	// {	printf ("Error : Not able to open output file.\n") ;
+	// 	// free (buffer) ;
+	// 	return 1 ;
+	// } ;
 
-	int samples_written = 0;
+	// int samples_written = 0;
 
-	samples_written = sf_write_int (outfile, buffer, sample_count);
-	sf_close(outfile);
+	// samples_written = sf_write_int (outfile, buffer, sample_count);
+	// sf_close(outfile);
 
-	printf  ("%d %d", sample_count, samples_written);
+	// printf  ("%d %d", sample_count, samples_written);
+
+	write_to_wav(outfilename, buffer, sample_count, 44100);
 
 	return 0 ;
 } /* main */
