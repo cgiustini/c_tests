@@ -99,6 +99,10 @@ void update_squarewave(struct squarewave *sw){
 	sw->i = sw->i + 1;
 }
 
+int sign(int x) {
+    return (x > 0) - (x < 0);
+}
+
 
 int process(SNDFILE * infile, int * buffer, int channels)
 {	int buf [BLOCK_SIZE] ;
@@ -122,6 +126,9 @@ int process(SNDFILE * infile, int * buffer, int channels)
 	// sw.state = 1;
 	// sw.i = 0;
 
+	int clip_thresh = 0.5 * 536870912;
+	int clip_scaling = 4;
+
 
 	while ((readcount = sf_read_int (infile, buf, items)) > 0)
 	{	
@@ -132,15 +139,16 @@ int process(SNDFILE * infile, int * buffer, int channels)
 		}
 		for (k = 0 ; k < readcount ; k++)
 		{
-			if((k % 2) == 0){
-				out = buf[k] * sw.state;
-			}
-			else{
-				out = buf[k] * sw.state;
-				update_squarewave(&sw);
-			}
+			// if((k % 2) == 0){
+			// 	out = buf[k] * sw.state;
+			// }
+			// else{
+			// 	out = buf[k] * sw.state;
+			// 	update_squarewave(&sw);
+			// }
+			// buffer[i] = out;
 
-			buffer[i] = out;
+			buffer[i] =  (abs(buf[k]) < clip_thresh) ? buf[k] : (sign(buf[k]) * clip_thresh * clip_scaling);
 			i++;
 		};
 
@@ -171,7 +179,6 @@ int write_to_wav(char *filename, int * buffer, int sample_count, int samplerate)
 	printf  ("%d %d", sample_count, samples_written);		
 	return samples_written;
 };
-
 
 int
 main (int argc, char * argv [])
